@@ -1,17 +1,4 @@
-# =============================================================================
-# NANOTRONICS SURVEY - Dependencies
-# Production-ready Flask application
-# =============================================================================
-
-# Core Framework
-flask>=2.3.0
-flask-cors>=4.0.0
-
-# Production Server
-gunicorn>=21.0.0
-
-# Environment Variables
-python-dotenv>=1.0.0
-
-# Logging (optional - using stdlib for simplicity)
-# structlog>=23.0.0
+flask==2.3.3
+flask-cors==4.0.0
+gunicorn==21.2.0
+python-dotenv==1.0.0
