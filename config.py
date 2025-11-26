@@ -21,6 +21,29 @@ class Config:
     FLASK_ENV: str = os.environ.get('FLASK_ENV', 'production')
     DEBUG: bool = FLASK_ENV != 'production'
     
+    # Database
+    # Railway provides DATABASE_URL automatically when you add PostgreSQL
+    DATABASE_URL: str = os.environ.get('DATABASE_URL', '')
+    
+    # Handle Railway's postgres:// vs postgresql:// URL format
+    @classmethod
+    def get_database_url(cls) -> str:
+        """Get properly formatted database URL"""
+        url = cls.DATABASE_URL
+        # SQLAlchemy requires postgresql:// instead of postgres://
+        if url.startswith('postgres://'):
+            url = url.replace('postgres://', 'postgresql://', 1)
+        return url
+    
+    SQLALCHEMY_DATABASE_URI: str = property(lambda self: self.get_database_url())
+    SQLALCHEMY_TRACK_MODIFICATIONS: bool = False
+    SQLALCHEMY_ENGINE_OPTIONS: dict = {
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
+        'pool_size': 5,
+        'max_overflow': 10,
+    }
+    
     # CORS
     ALLOWED_ORIGINS: List[str] = os.environ.get(
         'ALLOWED_ORIGINS', 
@@ -36,17 +59,22 @@ class Config:
     RATE_LIMIT_REQUESTS: int = int(os.environ.get('RATE_LIMIT_REQUESTS', 100))
     RATE_LIMIT_WINDOW: int = int(os.environ.get('RATE_LIMIT_WINDOW', 60))  # seconds
     
-    # Storage
+    # Storage (fallback for file-based storage)
     RESPONSES_DIR: str = os.environ.get('RESPONSES_DIR', 'responses')
     
     # Application Info
     APP_NAME: str = 'Nanotronics Survey'
-    APP_VERSION: str = '1.0.0'
+    APP_VERSION: str = '1.1.0'
     
     @classmethod
     def is_production(cls) -> bool:
         """Check if running in production environment"""
         return cls.FLASK_ENV == 'production'
+    
+    @classmethod
+    def has_database(cls) -> bool:
+        """Check if database is configured"""
+        return bool(cls.DATABASE_URL)
     
     @classmethod
     def validate(cls) -> List[str]:
@@ -59,6 +87,9 @@ class Config:
             
             if '*' in cls.ALLOWED_ORIGINS:
                 warnings.append('CORS is allowing all origins in production!')
+            
+            if not cls.has_database():
+                warnings.append('DATABASE_URL not set - using file-based storage (data will be lost on restart)')
         
         return warnings
     
@@ -72,6 +103,7 @@ class Config:
             'debug': cls.DEBUG,
             'log_level': cls.LOG_LEVEL,
             'rate_limit_enabled': cls.RATE_LIMIT_ENABLED,
+            'database_configured': cls.has_database(),
         }
 
 
@@ -107,4 +139,3 @@ def get_config():
     }
     
     return configs.get(env, ProductionConfig)
-

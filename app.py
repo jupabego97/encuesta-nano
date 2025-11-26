@@ -1,9 +1,8 @@
 """
 NANOTRONICS SURVEY - Backend Flask
-Production-ready backend with health checks, logging, and security
+Production-ready backend with PostgreSQL, health checks, logging, and security
 """
 
-import csv
 import json
 import os
 import time
@@ -16,6 +15,7 @@ from flask import Flask, request, jsonify, send_from_directory, g
 from flask_cors import CORS
 
 from config import Config, get_config
+from models import db, SurveyResponse
 
 # =============================================================================
 # Application Factory
@@ -29,10 +29,27 @@ def create_app(config_class=None):
     if config_class is None:
         config_class = get_config()
     
-    app.config.from_object(config_class)
+    # Set Flask config
+    app.config['SECRET_KEY'] = config_class.SECRET_KEY
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    
+    # Database configuration
+    if config_class.has_database():
+        app.config['SQLALCHEMY_DATABASE_URI'] = config_class.get_database_url()
+        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = config_class.SQLALCHEMY_ENGINE_OPTIONS
+    
+    # Store config class reference
+    app.config_class = config_class
     
     # Initialize CORS
     CORS(app, origins=config_class.ALLOWED_ORIGINS)
+    
+    # Initialize database if configured
+    if config_class.has_database():
+        db.init_app(app)
+        with app.app_context():
+            db.create_all()
+            app.logger.info("✅ Database tables created/verified")
     
     # Setup logging
     setup_logging(app)
@@ -46,7 +63,7 @@ def create_app(config_class=None):
     # Register error handlers
     register_error_handlers(app)
     
-    # Ensure responses directory exists
+    # Ensure responses directory exists (fallback storage)
     responses_dir = config_class.RESPONSES_DIR
     if not os.path.exists(responses_dir):
         os.makedirs(responses_dir)
@@ -58,6 +75,7 @@ def create_app(config_class=None):
     
     app.logger.info(f"🚀 {config_class.APP_NAME} v{config_class.APP_VERSION} initialized")
     app.logger.info(f"📊 Environment: {config_class.FLASK_ENV}")
+    app.logger.info(f"💾 Database: {'PostgreSQL' if config_class.has_database() else 'File-based (ephemeral)'}")
     
     return app
 
@@ -71,7 +89,7 @@ def setup_logging(app):
     import logging
     import sys
     
-    config = get_config()
+    config = app.config_class
     
     # Set log level
     log_level = getattr(logging, config.LOG_LEVEL, logging.INFO)
@@ -160,11 +178,10 @@ class RateLimiter:
 rate_limiter = None
 
 
-def get_rate_limiter():
+def get_rate_limiter(config):
     """Get or create rate limiter"""
     global rate_limiter
     if rate_limiter is None:
-        config = get_config()
         rate_limiter = RateLimiter(
             config.RATE_LIMIT_REQUESTS,
             config.RATE_LIMIT_WINDOW
@@ -176,11 +193,13 @@ def rate_limit(f):
     """Rate limiting decorator"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        config = get_config()
+        from flask import current_app
+        config = current_app.config_class
+        
         if not config.RATE_LIMIT_ENABLED:
             return f(*args, **kwargs)
         
-        limiter = get_rate_limiter()
+        limiter = get_rate_limiter(config)
         client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
         
         if not limiter.is_allowed(client_ip):
@@ -190,14 +209,7 @@ def rate_limit(f):
                 'retry_after': config.RATE_LIMIT_WINDOW
             }), 429
         
-        # Add rate limit headers
-        response = f(*args, **kwargs)
-        if isinstance(response, tuple):
-            resp, status = response
-        else:
-            resp, status = response, 200
-        
-        return resp, status
+        return f(*args, **kwargs)
     
     return decorated_function
 
@@ -246,7 +258,7 @@ def register_middleware(app):
 
 def register_routes(app):
     """Register all application routes"""
-    config = get_config()
+    config = app.config_class
     
     # =========================================================================
     # Health Check Endpoints
@@ -265,8 +277,17 @@ def register_routes(app):
     def readiness_check():
         """Readiness check - verify app is ready to serve traffic"""
         checks = {
-            'responses_dir': os.path.exists(config.RESPONSES_DIR),
+            'app': True,
         }
+        
+        # Check database connection if configured
+        if config.has_database():
+            try:
+                db.session.execute(db.text('SELECT 1'))
+                checks['database'] = True
+            except Exception as e:
+                checks['database'] = False
+                app.logger.error(f"Database health check failed: {e}")
         
         all_ready = all(checks.values())
         status = 'ready' if all_ready else 'not_ready'
@@ -331,27 +352,34 @@ def register_routes(app):
             data['client_ip'] = request.headers.get('X-Forwarded-For', request.remote_addr)
             data['user_agent'] = request.headers.get('User-Agent', 'unknown')
             
-            # Generate unique filename
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
-            filename = f'response_{timestamp}.json'
-            filepath = os.path.join(config.RESPONSES_DIR, filename)
-            
-            # Save to file
-            with open(filepath, 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
-            
-            # Also append to master CSV
-            append_to_csv(data, config.RESPONSES_DIR)
-            
-            app.logger.info(f"Survey response saved: {filename}")
+            # Save to database if configured
+            if config.has_database():
+                response_record = SurveyResponse.from_survey_data(data)
+                db.session.add(response_record)
+                db.session.commit()
+                response_id = response_record.id
+                app.logger.info(f"Survey response saved to database: ID {response_id}")
+            else:
+                # Fallback to file storage
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+                filename = f'response_{timestamp}.json'
+                filepath = os.path.join(config.RESPONSES_DIR, filename)
+                
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    json.dump(data, f, ensure_ascii=False, indent=2)
+                
+                response_id = timestamp
+                app.logger.info(f"Survey response saved to file: {filename}")
             
             return jsonify({
                 'success': True,
                 'message': '¡Respuesta guardada correctamente!',
-                'id': timestamp
+                'id': str(response_id)
             }), 200
             
         except Exception as e:
+            if config.has_database():
+                db.session.rollback()
             app.logger.error(f'Error saving response: {e}', exc_info=True)
             return jsonify({
                 'error': 'Internal server error',
@@ -363,30 +391,39 @@ def register_routes(app):
     def get_responses():
         """Get all responses (for admin view)"""
         try:
-            responses = []
-            
-            if not os.path.exists(config.RESPONSES_DIR):
+            if config.has_database():
+                # Get from database
+                responses = SurveyResponse.query.order_by(
+                    SurveyResponse.created_at.desc()
+                ).all()
+                
                 return jsonify({
-                    'total': 0,
-                    'responses': []
+                    'total': len(responses),
+                    'responses': [r.to_dict() for r in responses],
+                    'storage': 'database'
                 }), 200
-            
-            for filename in os.listdir(config.RESPONSES_DIR):
-                if filename.endswith('.json'):
-                    filepath = os.path.join(config.RESPONSES_DIR, filename)
-                    with open(filepath, 'r', encoding='utf-8') as f:
-                        responses.append(json.load(f))
-            
-            # Sort by timestamp (newest first)
-            responses.sort(
-                key=lambda x: x.get('server_timestamp', ''), 
-                reverse=True
-            )
-            
-            return jsonify({
-                'total': len(responses),
-                'responses': responses
-            }), 200
+            else:
+                # Get from files
+                responses = []
+                
+                if os.path.exists(config.RESPONSES_DIR):
+                    for filename in os.listdir(config.RESPONSES_DIR):
+                        if filename.endswith('.json'):
+                            filepath = os.path.join(config.RESPONSES_DIR, filename)
+                            with open(filepath, 'r', encoding='utf-8') as f:
+                                responses.append(json.load(f))
+                
+                # Sort by timestamp (newest first)
+                responses.sort(
+                    key=lambda x: x.get('server_timestamp', ''), 
+                    reverse=True
+                )
+                
+                return jsonify({
+                    'total': len(responses),
+                    'responses': responses,
+                    'storage': 'file'
+                }), 200
             
         except Exception as e:
             app.logger.error(f'Error getting responses: {e}', exc_info=True)
@@ -397,37 +434,79 @@ def register_routes(app):
     def get_stats():
         """Get basic survey statistics"""
         try:
-            responses = []
-            
-            if not os.path.exists(config.RESPONSES_DIR):
-                return jsonify({
-                    'total_responses': 0,
-                    'message': 'No hay respuestas aún'
-                }), 200
-            
-            for filename in os.listdir(config.RESPONSES_DIR):
-                if filename.endswith('.json'):
-                    filepath = os.path.join(config.RESPONSES_DIR, filename)
-                    with open(filepath, 'r', encoding='utf-8') as f:
-                        responses.append(json.load(f))
-            
-            if not responses:
-                return jsonify({
-                    'total_responses': 0,
-                    'message': 'No hay respuestas aún'
-                }), 200
-            
-            # Calculate basic stats
-            stats = {
-                'total_responses': len(responses),
-                'q1_distribution': count_values(responses, 'q1'),
-                'q3_distribution': count_values(responses, 'q3'),
-                'q6_average': calculate_average(responses, 'q6'),
-                'q7_average': calculate_average(responses, 'q7_slider'),
-                'q10_average': calculate_average(responses, 'q10_trust'),
-            }
-            
-            return jsonify(stats), 200
+            if config.has_database():
+                # Get stats from database
+                total = SurveyResponse.query.count()
+                
+                if total == 0:
+                    return jsonify({
+                        'total_responses': 0,
+                        'message': 'No hay respuestas aún',
+                        'storage': 'database'
+                    }), 200
+                
+                # Get all responses for stats calculation
+                responses = SurveyResponse.query.all()
+                
+                # Calculate distributions
+                q1_dist = {}
+                q3_dist = {}
+                q6_values = []
+                q7_values = []
+                q10_values = []
+                
+                for r in responses:
+                    if r.q1_time_known:
+                        q1_dist[r.q1_time_known] = q1_dist.get(r.q1_time_known, 0) + 1
+                    if r.q3_experience:
+                        q3_dist[r.q3_experience] = q3_dist.get(r.q3_experience, 0) + 1
+                    if r.q6_staff_rating:
+                        q6_values.append(r.q6_staff_rating)
+                    if r.q7_products_updated:
+                        q7_values.append(r.q7_products_updated)
+                    if r.q10_trust:
+                        q10_values.append(r.q10_trust)
+                
+                stats = {
+                    'total_responses': total,
+                    'q1_distribution': q1_dist,
+                    'q3_distribution': q3_dist,
+                    'q6_average': round(sum(q6_values) / len(q6_values), 2) if q6_values else None,
+                    'q7_average': round(sum(q7_values) / len(q7_values), 2) if q7_values else None,
+                    'q10_average': round(sum(q10_values) / len(q10_values), 2) if q10_values else None,
+                    'storage': 'database'
+                }
+                
+                return jsonify(stats), 200
+            else:
+                # Get stats from files
+                responses = []
+                
+                if os.path.exists(config.RESPONSES_DIR):
+                    for filename in os.listdir(config.RESPONSES_DIR):
+                        if filename.endswith('.json'):
+                            filepath = os.path.join(config.RESPONSES_DIR, filename)
+                            with open(filepath, 'r', encoding='utf-8') as f:
+                                responses.append(json.load(f))
+                
+                if not responses:
+                    return jsonify({
+                        'total_responses': 0,
+                        'message': 'No hay respuestas aún',
+                        'storage': 'file'
+                    }), 200
+                
+                stats = {
+                    'total_responses': len(responses),
+                    'q1_distribution': count_values(responses, 'q1'),
+                    'q3_distribution': count_values(responses, 'q3'),
+                    'q6_average': calculate_average(responses, 'q6'),
+                    'q7_average': calculate_average(responses, 'q7_slider'),
+                    'q10_average': calculate_average(responses, 'q10_trust'),
+                    'storage': 'file'
+                }
+                
+                return jsonify(stats), 200
             
         except Exception as e:
             app.logger.error(f'Error getting stats: {e}', exc_info=True)
@@ -440,34 +519,13 @@ def register_routes(app):
             'app': config.APP_NAME,
             'version': config.APP_VERSION,
             'environment': config.FLASK_ENV,
+            'database': 'PostgreSQL' if config.has_database() else 'File-based',
         }), 200
 
 
 # =============================================================================
 # Helper Functions
 # =============================================================================
-
-def append_to_csv(data: dict, responses_dir: str):
-    """Append response to master CSV file"""
-    csv_file = os.path.join(responses_dir, 'all_responses.csv')
-    file_exists = os.path.exists(csv_file)
-    
-    # Flatten nested data
-    flat_data = {}
-    for key, value in data.items():
-        if isinstance(value, list):
-            flat_data[key] = ', '.join(str(v) for v in value)
-        else:
-            flat_data[key] = str(value)
-    
-    with open(csv_file, 'a', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=flat_data.keys())
-        
-        if not file_exists:
-            writer.writeheader()
-        
-        writer.writerow(flat_data)
-
 
 def count_values(responses: list, key: str) -> dict:
     """Count occurrences of each value for a key"""
@@ -554,6 +612,7 @@ app = create_app()
 if __name__ == '__main__':
     config = get_config()
     print(f'🚀 {config.APP_NAME} v{config.APP_VERSION}')
+    print(f'💾 Database: {"PostgreSQL" if config.has_database() else "File-based"}')
     print(f'📊 Open http://localhost:{config.PORT} in your browser')
     print('-' * 40)
     app.run(

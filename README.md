@@ -9,12 +9,14 @@ Encuesta interactiva moderna para recopilar opiniones de clientes de Nanotronics
 - Soporte para dispositivos móviles (responsive)
 - Navegación por teclado y gestos táctiles
 - Backend Flask con API REST
-- Almacenamiento de respuestas en JSON y CSV
+- **Base de datos PostgreSQL** para persistencia
+- Fallback a almacenamiento en archivos si no hay BD
 - Listo para producción en Railway
 
 ## Requisitos
 
 - Python 3.11+
+- PostgreSQL (opcional, recomendado para producción)
 - pip
 
 ## Instalación Local
@@ -43,6 +45,7 @@ pip install -r requirements.txt
 cp env.example.txt .env
 
 # Editar .env con tus valores
+# Importante: configurar DATABASE_URL si usas PostgreSQL
 ```
 
 5. Ejecutar en desarrollo:
@@ -54,15 +57,41 @@ La aplicación estará disponible en `http://localhost:5000`
 
 ## Despliegue en Railway
 
-### Opción 1: Desde GitHub
+### Paso 1: Crear el proyecto
 
 1. Acceder a [Railway](https://railway.app)
 2. Conectar tu cuenta de GitHub
 3. Crear nuevo proyecto → Deploy from GitHub repo
 4. Seleccionar el repositorio `encuesta-nano`
-5. Railway detectará automáticamente la configuración
 
-### Opción 2: Usando Railway CLI
+### Paso 2: Agregar PostgreSQL
+
+1. En el proyecto de Railway, click en **"+ New"**
+2. Seleccionar **"Database"** → **"Add PostgreSQL"**
+3. Railway creará la base de datos y configurará automáticamente `DATABASE_URL`
+
+### Paso 3: Conectar la aplicación a la base de datos
+
+1. Click en tu servicio de la aplicación
+2. Ir a **"Variables"**
+3. Click en **"Add Reference"** → seleccionar la variable `DATABASE_URL` del servicio PostgreSQL
+4. Railway conectará automáticamente la app con la BD
+
+### Paso 4: Configurar variables adicionales (opcional)
+
+| Variable | Descripción | Valor por defecto |
+|----------|-------------|-------------------|
+| `FLASK_ENV` | Ambiente de ejecución | `production` |
+| `SECRET_KEY` | Clave secreta para sesiones | (generar una segura) |
+| `ALLOWED_ORIGINS` | Orígenes CORS permitidos | `*` |
+| `LOG_LEVEL` | Nivel de logging | `INFO` |
+
+Para generar un SECRET_KEY seguro:
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+### Usando Railway CLI
 
 ```bash
 # Instalar Railway CLI
@@ -78,21 +107,37 @@ railway link
 railway up
 ```
 
-### Variables de Entorno en Railway
+## Base de Datos
 
-Configurar las siguientes variables en el panel de Railway:
+### Esquema
 
-| Variable | Descripción | Valor por defecto |
-|----------|-------------|-------------------|
-| `FLASK_ENV` | Ambiente de ejecución | `production` |
-| `SECRET_KEY` | Clave secreta para sesiones | (generar una segura) |
-| `ALLOWED_ORIGINS` | Orígenes CORS permitidos | `*` |
-| `LOG_LEVEL` | Nivel de logging | `INFO` |
-| `RATE_LIMIT_ENABLED` | Habilitar rate limiting | `true` |
+La tabla `survey_responses` almacena todas las respuestas:
 
-Para generar un SECRET_KEY seguro:
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | Integer | ID único autoincremental |
+| created_at | DateTime | Fecha de creación |
+| q1_time_known | String | Tiempo conociendo Nanotronics |
+| q3_experience | String | Experiencia de compra |
+| q6_staff_rating | Integer | Calificación del personal (1-5) |
+| q10_trust | Integer | Nivel de confianza (1-5) |
+| raw_data | Text | JSON completo de la respuesta |
+| ... | ... | (más campos para cada pregunta) |
+
+### Acceder a los datos
+
+**Desde Railway:**
+1. Click en el servicio PostgreSQL
+2. Click en **"Data"** para ver las tablas
+3. O usa **"Connect"** para obtener la cadena de conexión
+
+**Desde la API:**
 ```bash
-python -c "import secrets; print(secrets.token_hex(32))"
+# Obtener todas las respuestas
+curl https://tu-app.railway.app/api/responses
+
+# Obtener estadísticas
+curl https://tu-app.railway.app/api/stats
 ```
 
 ## API Endpoints
@@ -102,7 +147,7 @@ python -c "import secrets; print(secrets.token_hex(32))"
 | Endpoint | Método | Descripción |
 |----------|--------|-------------|
 | `/health` | GET | Health check básico |
-| `/health/ready` | GET | Verificación de preparación |
+| `/health/ready` | GET | Verificación de preparación (incluye BD) |
 | `/health/live` | GET | Verificación de vida |
 
 ### Endpoints de la Encuesta
@@ -123,48 +168,64 @@ curl -X POST https://tu-app.railway.app/api/submit \
   -d '{"q1": "1_6_meses", "q3": "excelente"}'
 ```
 
+### Ejemplo de Respuesta
+
+```json
+{
+  "success": true,
+  "message": "¡Respuesta guardada correctamente!",
+  "id": "42"
+}
+```
+
 ## Estructura del Proyecto
 
 ```
 encuesta-nano/
 ├── app.py              # Aplicación Flask principal
 ├── config.py           # Configuración centralizada
+├── models.py           # Modelos de base de datos (SQLAlchemy)
 ├── index.html          # Frontend de la encuesta
 ├── styles.css          # Estilos CSS
 ├── script.js           # Lógica JavaScript
 ├── requirements.txt    # Dependencias Python
-├── Procfile           # Configuración para Heroku/Railway
+├── Procfile           # Configuración para Railway
 ├── railway.json       # Configuración específica de Railway
-├── nixpacks.toml      # Configuración de build
 ├── runtime.txt        # Versión de Python
 ├── env.example.txt    # Ejemplo de variables de entorno
-└── responses/         # Directorio de respuestas (no versionado)
+└── responses/         # Directorio de respuestas (fallback)
     └── .gitkeep
 ```
 
 ## Características de Producción
 
+- **PostgreSQL**: Base de datos persistente
 - **Health Checks**: Endpoints `/health`, `/health/ready`, `/health/live`
-- **Logging Estructurado**: Formato JSON para mejor integración con sistemas de monitoreo
+- **Logging Estructurado**: Formato JSON para mejor integración
 - **Rate Limiting**: Protección contra abuso de API
-- **Headers de Seguridad**: X-Content-Type-Options, X-Frame-Options, X-XSS-Protection
+- **Headers de Seguridad**: X-Content-Type-Options, X-Frame-Options
 - **CORS Configurable**: Control de orígenes permitidos
-- **Graceful Shutdown**: Apagado limpio de workers
-- **Gunicorn Optimizado**: Workers multi-hilo para mejor rendimiento
+- **Fallback Storage**: Si no hay BD, usa archivos (datos efímeros)
 
-## Desarrollo
+## Desarrollo Local con PostgreSQL
 
-### Ejecutar en modo desarrollo
-
+1. Instalar PostgreSQL localmente
+2. Crear base de datos:
 ```bash
-FLASK_ENV=development python app.py
+createdb encuesta_nano
 ```
 
-### Ejecutar con Gunicorn (simular producción)
-
-```bash
-gunicorn app:app --bind 0.0.0.0:5000 --workers 2 --threads 4
+3. Configurar `.env`:
 ```
+DATABASE_URL=postgresql://usuario:password@localhost:5432/encuesta_nano
+```
+
+4. Ejecutar la aplicación:
+```bash
+python app.py
+```
+
+Las tablas se crearán automáticamente al iniciar.
 
 ## Licencia
 
@@ -173,4 +234,3 @@ MIT License
 ## Autor
 
 Nanotronics Team
-
