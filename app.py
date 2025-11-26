@@ -15,7 +15,21 @@ from flask import Flask, request, jsonify, send_from_directory, g
 from flask_cors import CORS
 
 from config import Config, get_config
-from models import db, SurveyResponse
+
+# Database imports - optional
+db = None
+SurveyResponse = None
+
+def init_database():
+    """Initialize database if available"""
+    global db, SurveyResponse
+    try:
+        from models import db as _db, SurveyResponse as _SurveyResponse
+        db = _db
+        SurveyResponse = _SurveyResponse
+        return True
+    except ImportError:
+        return False
 
 # =============================================================================
 # Application Factory
@@ -23,6 +37,8 @@ from models import db, SurveyResponse
 
 def create_app(config_class=None):
     """Application factory pattern"""
+    global db, SurveyResponse
+    
     app = Flask(__name__, static_folder='.', static_url_path='')
     
     # Load configuration
@@ -33,23 +49,45 @@ def create_app(config_class=None):
     app.config['SECRET_KEY'] = config_class.SECRET_KEY
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
-    # Database configuration
-    if config_class.has_database():
-        app.config['SQLALCHEMY_DATABASE_URI'] = config_class.get_database_url()
-        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = config_class.SQLALCHEMY_ENGINE_OPTIONS
-    
     # Store config class reference
     app.config_class = config_class
     
+    # Flag to track if database is available
+    app.db_available = False
+    
+    # Database configuration - only if DATABASE_URL is set and valid
+    if config_class.has_database():
+        db_url = config_class.get_database_url()
+        # Validate URL doesn't point to wrong service
+        if 'web.railway.internal' not in db_url and db_url:
+            app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+            app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+                'pool_pre_ping': True,
+                'pool_recycle': 300,
+                'pool_size': 5,
+                'max_overflow': 10,
+                'connect_args': {
+                    'connect_timeout': 10
+                }
+            }
+            
+            # Try to initialize database
+            if init_database() and db is not None:
+                try:
+                    db.init_app(app)
+                    with app.app_context():
+                        db.create_all()
+                    app.db_available = True
+                    app.logger.info("✅ Database connected and tables created")
+                except Exception as e:
+                    app.logger.warning(f"⚠️ Database connection failed: {e}")
+                    app.logger.warning("📁 Falling back to file-based storage")
+                    app.db_available = False
+        else:
+            app.logger.warning("⚠️ Invalid DATABASE_URL detected, using file storage")
+    
     # Initialize CORS
     CORS(app, origins=config_class.ALLOWED_ORIGINS)
-    
-    # Initialize database if configured
-    if config_class.has_database():
-        db.init_app(app)
-        with app.app_context():
-            db.create_all()
-            app.logger.info("✅ Database tables created/verified")
     
     # Setup logging
     setup_logging(app)
@@ -75,7 +113,7 @@ def create_app(config_class=None):
     
     app.logger.info(f"🚀 {config_class.APP_NAME} v{config_class.APP_VERSION} initialized")
     app.logger.info(f"📊 Environment: {config_class.FLASK_ENV}")
-    app.logger.info(f"💾 Database: {'PostgreSQL' if config_class.has_database() else 'File-based (ephemeral)'}")
+    app.logger.info(f"💾 Storage: {'PostgreSQL' if app.db_available else 'File-based'}")
     
     return app
 
@@ -280,16 +318,18 @@ def register_routes(app):
             'app': True,
         }
         
-        # Check database connection if configured
-        if config.has_database():
+        # Check database connection if available
+        if app.db_available and db is not None:
             try:
                 db.session.execute(db.text('SELECT 1'))
                 checks['database'] = True
             except Exception as e:
                 checks['database'] = False
                 app.logger.error(f"Database health check failed: {e}")
+        else:
+            checks['storage'] = 'file-based'
         
-        all_ready = all(checks.values())
+        all_ready = all(v for v in checks.values() if isinstance(v, bool))
         status = 'ready' if all_ready else 'not_ready'
         
         return jsonify({
@@ -352,24 +392,23 @@ def register_routes(app):
             data['client_ip'] = request.headers.get('X-Forwarded-For', request.remote_addr)
             data['user_agent'] = request.headers.get('User-Agent', 'unknown')
             
-            # Save to database if configured
-            if config.has_database():
-                response_record = SurveyResponse.from_survey_data(data)
-                db.session.add(response_record)
-                db.session.commit()
-                response_id = response_record.id
-                app.logger.info(f"Survey response saved to database: ID {response_id}")
+            # Save to database if available
+            if app.db_available and db is not None and SurveyResponse is not None:
+                try:
+                    response_record = SurveyResponse.from_survey_data(data)
+                    db.session.add(response_record)
+                    db.session.commit()
+                    response_id = response_record.id
+                    app.logger.info(f"Survey response saved to database: ID {response_id}")
+                except Exception as e:
+                    db.session.rollback()
+                    app.logger.error(f"Database save failed: {e}, falling back to file")
+                    # Fallback to file
+                    response_id = save_to_file(data, config.RESPONSES_DIR)
             else:
-                # Fallback to file storage
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
-                filename = f'response_{timestamp}.json'
-                filepath = os.path.join(config.RESPONSES_DIR, filename)
-                
-                with open(filepath, 'w', encoding='utf-8') as f:
-                    json.dump(data, f, ensure_ascii=False, indent=2)
-                
-                response_id = timestamp
-                app.logger.info(f"Survey response saved to file: {filename}")
+                # Use file storage
+                response_id = save_to_file(data, config.RESPONSES_DIR)
+                app.logger.info(f"Survey response saved to file: {response_id}")
             
             return jsonify({
                 'success': True,
@@ -378,8 +417,6 @@ def register_routes(app):
             }), 200
             
         except Exception as e:
-            if config.has_database():
-                db.session.rollback()
             app.logger.error(f'Error saving response: {e}', exc_info=True)
             return jsonify({
                 'error': 'Internal server error',
@@ -391,7 +428,7 @@ def register_routes(app):
     def get_responses():
         """Get all responses (for admin view)"""
         try:
-            if config.has_database():
+            if app.db_available and db is not None and SurveyResponse is not None:
                 # Get from database
                 responses = SurveyResponse.query.order_by(
                     SurveyResponse.created_at.desc()
@@ -404,20 +441,7 @@ def register_routes(app):
                 }), 200
             else:
                 # Get from files
-                responses = []
-                
-                if os.path.exists(config.RESPONSES_DIR):
-                    for filename in os.listdir(config.RESPONSES_DIR):
-                        if filename.endswith('.json'):
-                            filepath = os.path.join(config.RESPONSES_DIR, filename)
-                            with open(filepath, 'r', encoding='utf-8') as f:
-                                responses.append(json.load(f))
-                
-                # Sort by timestamp (newest first)
-                responses.sort(
-                    key=lambda x: x.get('server_timestamp', ''), 
-                    reverse=True
-                )
+                responses = get_responses_from_files(config.RESPONSES_DIR)
                 
                 return jsonify({
                     'total': len(responses),
@@ -434,7 +458,7 @@ def register_routes(app):
     def get_stats():
         """Get basic survey statistics"""
         try:
-            if config.has_database():
+            if app.db_available and db is not None and SurveyResponse is not None:
                 # Get stats from database
                 total = SurveyResponse.query.count()
                 
@@ -480,14 +504,7 @@ def register_routes(app):
                 return jsonify(stats), 200
             else:
                 # Get stats from files
-                responses = []
-                
-                if os.path.exists(config.RESPONSES_DIR):
-                    for filename in os.listdir(config.RESPONSES_DIR):
-                        if filename.endswith('.json'):
-                            filepath = os.path.join(config.RESPONSES_DIR, filename)
-                            with open(filepath, 'r', encoding='utf-8') as f:
-                                responses.append(json.load(f))
+                responses = get_responses_from_files(config.RESPONSES_DIR)
                 
                 if not responses:
                     return jsonify({
@@ -519,13 +536,48 @@ def register_routes(app):
             'app': config.APP_NAME,
             'version': config.APP_VERSION,
             'environment': config.FLASK_ENV,
-            'database': 'PostgreSQL' if config.has_database() else 'File-based',
+            'storage': 'PostgreSQL' if app.db_available else 'File-based',
         }), 200
 
 
 # =============================================================================
 # Helper Functions
 # =============================================================================
+
+def save_to_file(data: dict, responses_dir: str) -> str:
+    """Save response to file"""
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+    filename = f'response_{timestamp}.json'
+    filepath = os.path.join(responses_dir, filename)
+    
+    with open(filepath, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    
+    return timestamp
+
+
+def get_responses_from_files(responses_dir: str) -> list:
+    """Get all responses from files"""
+    responses = []
+    
+    if os.path.exists(responses_dir):
+        for filename in os.listdir(responses_dir):
+            if filename.endswith('.json'):
+                filepath = os.path.join(responses_dir, filename)
+                try:
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        responses.append(json.load(f))
+                except Exception:
+                    pass
+    
+    # Sort by timestamp (newest first)
+    responses.sort(
+        key=lambda x: x.get('server_timestamp', ''), 
+        reverse=True
+    )
+    
+    return responses
+
 
 def count_values(responses: list, key: str) -> dict:
     """Count occurrences of each value for a key"""
@@ -612,7 +664,7 @@ app = create_app()
 if __name__ == '__main__':
     config = get_config()
     print(f'🚀 {config.APP_NAME} v{config.APP_VERSION}')
-    print(f'💾 Database: {"PostgreSQL" if config.has_database() else "File-based"}')
+    print(f'💾 Storage: {"PostgreSQL" if app.db_available else "File-based"}')
     print(f'📊 Open http://localhost:{config.PORT} in your browser')
     print('-' * 40)
     app.run(
