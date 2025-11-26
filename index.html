@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Encuesta Nanotronics | Tu opinión importa</title>
+    <title>Encuesta NANO | Tu opinión importa</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
@@ -22,31 +22,24 @@
         <section id="welcome-screen" class="screen active">
             <div class="logo-container">
                 <div class="logo-icon">
-                    <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="30" cy="30" r="28" stroke="url(#logoGrad)" stroke-width="2"/>
-                        <circle cx="30" cy="30" r="8" fill="url(#logoGrad)"/>
-                        <circle cx="30" cy="12" r="4" fill="#00D9FF"/>
-                        <circle cx="45" cy="22" r="4" fill="#7B2FFF"/>
-                        <circle cx="45" cy="38" r="4" fill="#FF2D7C"/>
-                        <circle cx="30" cy="48" r="4" fill="#00D9FF"/>
-                        <circle cx="15" cy="38" r="4" fill="#7B2FFF"/>
-                        <circle cx="15" cy="22" r="4" fill="#FF2D7C"/>
-                        <line x1="30" y1="22" x2="30" y2="16" stroke="#00D9FF" stroke-width="1.5"/>
-                        <line x1="37" y1="25" x2="42" y2="22" stroke="#7B2FFF" stroke-width="1.5"/>
-                        <line x1="37" y1="35" x2="42" y2="38" stroke="#FF2D7C" stroke-width="1.5"/>
-                        <line x1="30" y1="38" x2="30" y2="44" stroke="#00D9FF" stroke-width="1.5"/>
-                        <line x1="23" y1="35" x2="18" y2="38" stroke="#7B2FFF" stroke-width="1.5"/>
-                        <line x1="23" y1="25" x2="18" y2="22" stroke="#FF2D7C" stroke-width="1.5"/>
-                        <defs>
-                            <linearGradient id="logoGrad" x1="0" y1="0" x2="60" y2="60">
-                                <stop offset="0%" stop-color="#00D9FF"/>
-                                <stop offset="50%" stop-color="#7B2FFF"/>
-                                <stop offset="100%" stop-color="#FF2D7C"/>
-                            </linearGradient>
-                        </defs>
+                    <!-- NANO Logo basado en la imagen -->
+                    <svg viewBox="0 0 200 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Texto NANO -->
+                        <text x="0" y="52" font-family="Sora, sans-serif" font-size="52" font-weight="700" fill="#FFFFFF" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">NAN</text>
+                        <!-- Letra O con el símbolo de conexión -->
+                        <g transform="translate(130, 10)">
+                            <!-- Círculo principal de la O -->
+                            <circle cx="25" cy="25" r="22" fill="none" stroke="#FFFFFF" stroke-width="8" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));"/>
+                            <!-- Nodos del símbolo de conexión -->
+                            <circle cx="50" cy="8" r="7" fill="#2DBDB6"/>
+                            <circle cx="58" cy="28" r="7" fill="#2DBDB6"/>
+                            <circle cx="42" cy="42" r="7" fill="#2DBDB6"/>
+                            <!-- Líneas de conexión -->
+                            <line x1="45" y1="12" x2="54" y2="24" stroke="#2DBDB6" stroke-width="3" stroke-linecap="round"/>
+                            <line x1="54" y1="32" x2="46" y2="38" stroke="#2DBDB6" stroke-width="3" stroke-linecap="round"/>
+                        </g>
                     </svg>
                 </div>
-                <h1 class="brand-name">NANOTRONICS</h1>
             </div>
             <h2 class="welcome-title">Tu opinión nos importa</h2>
             <p class="welcome-subtitle">Ayúdanos a mejorar respondiendo esta breve encuesta. Solo te tomará unos minutos.</p>
@@ -72,7 +65,7 @@
                 <!-- Question 1 -->
                 <div class="question-card" data-question="1">
                     <div class="question-number">01</div>
-                    <h3 class="question-text">¿Hace cuánto conoces Nanotronics?</h3>
+                    <h3 class="question-text">¿Hace cuánto conoces NANO?</h3>
                     <div class="options-grid time-options">
                         <label class="option-card">
                             <input type="radio" name="q1" value="menos_1_mes" required>
@@ -115,7 +108,7 @@
                 <!-- Question 2 -->
                 <div class="question-card" data-question="2">
                     <div class="question-number">02</div>
-                    <h3 class="question-text">¿Qué es lo primero que piensas cuando escuchas el nombre Nanotronics?</h3>
+                    <h3 class="question-text">¿Qué es lo primero que piensas cuando escuchas el nombre NANO?</h3>
                     <div class="quick-tags">
                         <button type="button" class="tag-btn" data-value="Tecnología">💻 Tecnología</button>
                         <button type="button" class="tag-btn" data-value="Calidad">✨ Calidad</button>
@@ -173,7 +166,7 @@
                 <!-- Question 4 -->
                 <div class="question-card" data-question="4">
                     <div class="question-number">04</div>
-                    <h3 class="question-text">¿Qué es lo que más te gusta de Nanotronics?</h3>
+                    <h3 class="question-text">¿Qué es lo que más te gusta de NANO?</h3>
                     <div class="checkbox-grid">
                         <label class="checkbox-card">
                             <input type="checkbox" name="q4" value="productos">
@@ -324,19 +317,16 @@
                 <!-- Question 8 -->
                 <div class="question-card" data-question="8">
                     <div class="question-number">08</div>
-                    <h3 class="question-text">¿Qué productos te gustaría que Nanotronics ofreciera?</h3>
+                    <h3 class="question-text">¿Qué productos te gustaría que NANO ofreciera?</h3>
+                    <p class="invite-text">Selecciona algunas opciones o <strong>cuéntanos con tus propias palabras</strong> qué te gustaría encontrar:</p>
                     <div class="quick-tags multi-select">
                         <button type="button" class="tag-btn" data-value="Laptops gaming">🎮 Laptops gaming</button>
                         <button type="button" class="tag-btn" data-value="Celulares">📱 Celulares</button>
-                        <button type="button" class="tag-btn" data-value="Smart home">🏠 Smart home</button>
-                        <button type="button" class="tag-btn" data-value="Audio premium">🎧 Audio premium</button>
-                        <button type="button" class="tag-btn" data-value="Componentes PC">🖥️ Componentes PC</button>
                         <button type="button" class="tag-btn" data-value="Cámaras de seguridad">📹 Cámaras de seguridad</button>
-                        <button type="button" class="tag-btn" data-value="Paneles solares">☀️ Paneles solares</button>
+                        <button type="button" class="tag-btn" data-value="Paneles solares">🌞 Energía solar</button>
                         <button type="button" class="tag-btn" data-value="Consolas">🕹️ Consolas</button>
-                        <button type="button" class="tag-btn" data-value="Cámaras">📷 Cámaras</button>
                     </div>
-                    <textarea name="q8" class="text-input" placeholder="O escribe otros productos que te gustaría encontrar..." rows="2"></textarea>
+                    <textarea name="q8" class="text-input featured" placeholder="✍️ Cuéntanos: ¿Qué productos te gustaría ver en NANO? ¿Hay algo específico que buscas y no encuentras? Tu opinión nos ayuda a mejorar..." rows="4"></textarea>
                 </div>
 
                 <!-- Question 9 -->
@@ -476,9 +466,8 @@
                         <path class="checkmark-check" d="M30 60L50 80L90 40" fill="none" stroke="url(#successGrad)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
                         <defs>
                             <linearGradient id="successGrad" x1="0" y1="0" x2="120" y2="120">
-                                <stop offset="0%" stop-color="#00D9FF"/>
-                                <stop offset="50%" stop-color="#7B2FFF"/>
-                                <stop offset="100%" stop-color="#FF2D7C"/>
+                                <stop offset="0%" stop-color="#7DD3E8"/>
+                                <stop offset="100%" stop-color="#2DBDB6"/>
                             </linearGradient>
                         </defs>
                     </svg>
@@ -512,4 +501,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
