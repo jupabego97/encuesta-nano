@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Encuesta Nanotronics | Tu opinión importa</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="background-effects">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <div class="container">
+        <!-- Welcome Screen -->
+        <section id="welcome-screen" class="screen active">
+            <div class="logo-container">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="30" cy="30" r="28" stroke="url(#logoGrad)" stroke-width="2"/>
+                        <circle cx="30" cy="30" r="8" fill="url(#logoGrad)"/>
+                        <circle cx="30" cy="12" r="4" fill="#00D9FF"/>
+                        <circle cx="45" cy="22" r="4" fill="#7B2FFF"/>
+                        <circle cx="45" cy="38" r="4" fill="#FF2D7C"/>
+                        <circle cx="30" cy="48" r="4" fill="#00D9FF"/>
+                        <circle cx="15" cy="38" r="4" fill="#7B2FFF"/>
+                        <circle cx="15" cy="22" r="4" fill="#FF2D7C"/>
+                        <line x1="30" y1="22" x2="30" y2="16" stroke="#00D9FF" stroke-width="1.5"/>
+                        <line x1="37" y1="25" x2="42" y2="22" stroke="#7B2FFF" stroke-width="1.5"/>
+                        <line x1="37" y1="35" x2="42" y2="38" stroke="#FF2D7C" stroke-width="1.5"/>
+                        <line x1="30" y1="38" x2="30" y2="44" stroke="#00D9FF" stroke-width="1.5"/>
+                        <line x1="23" y1="35" x2="18" y2="38" stroke="#7B2FFF" stroke-width="1.5"/>
+                        <line x1="23" y1="25" x2="18" y2="22" stroke="#FF2D7C" stroke-width="1.5"/>
+                        <defs>
+                            <linearGradient id="logoGrad" x1="0" y1="0" x2="60" y2="60">
+                                <stop offset="0%" stop-color="#00D9FF"/>
+                                <stop offset="50%" stop-color="#7B2FFF"/>
+                                <stop offset="100%" stop-color="#FF2D7C"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <h1 class="brand-name">NANOTRONICS</h1>
+            </div>
+            <h2 class="welcome-title">Tu opinión nos importa</h2>
+            <p class="welcome-subtitle">Ayúdanos a mejorar respondiendo esta breve encuesta. Solo te tomará unos minutos.</p>
+            <button class="btn-primary" onclick="startSurvey()">
+                <span>Comenzar</span>
+                <svg class="btn-arrow" viewBox="0 0 24 24" fill="none">
+                    <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+            <p class="privacy-note">🔒 Tus respuestas son confidenciales</p>
+        </section>
+
+        <!-- Survey Questions -->
+        <section id="survey-screen" class="screen">
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <span class="progress-text" id="progress-text">1 de 11</span>
+            </div>
+
+            <form id="survey-form">
+                <!-- Question 1 -->
+                <div class="question-card" data-question="1">
+                    <div class="question-number">01</div>
+                    <h3 class="question-text">¿Hace cuánto conoces Nanotronics?</h3>
+                    <div class="options-grid time-options">
+                        <label class="option-card">
+                            <input type="radio" name="q1" value="menos_1_mes" required>
+                            <span class="option-content">
+                                <span class="option-icon">🆕</span>
+                                <span class="option-label">Menos de 1 mes</span>
+                            </span>
+                        </label>
+                        <label class="option-card">
+                            <input type="radio" name="q1" value="1_6_meses">
+                            <span class="option-content">
+                                <span class="option-icon">📅</span>
+                                <span class="option-label">1 - 6 meses</span>
+                            </span>
+                        </label>
+                        <label class="option-card">
+                            <input type="radio" name="q1" value="6_12_meses">
+                            <span class="option-content">
+                                <span class="option-icon">📆</span>
+                                <span class="option-label">6 - 12 meses</span>
+                            </span>
+                        </label>
+                        <label class="option-card">
+                            <input type="radio" name="q1" value="1_2_anos">
+                            <span class="option-content">
+                                <span class="option-icon">🗓️</span>
+                                <span class="option-label">1 - 2 años</span>
+                            </span>
+                        </label>
+                        <label class="option-card">
+                            <input type="radio" name="q1" value="mas_2_anos">
+                            <span class="option-content">
+                                <span class="option-icon">⭐</span>
+                                <span class="option-label">Más de 2 años</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Question 2 -->
+                <div class="question-card" data-question="2">
+                    <div class="question-number">02</div>
+                    <h3 class="question-text">¿Qué es lo primero que piensas cuando escuchas el nombre Nanotronics?</h3>
+                    <div class="quick-tags">
+                        <button type="button" class="tag-btn" data-value="Tecnología">💻 Tecnología</button>
+                        <button type="button" class="tag-btn" data-value="Calidad">✨ Calidad</button>
+                        <button type="button" class="tag-btn" data-value="Innovación">🚀 Innovación</button>
+                        <button type="button" class="tag-btn" data-value="Confianza">🤝 Confianza</button>
+                        <button type="button" class="tag-btn" data-value="Buen precio">💰 Buen precio</button>
+                        <button type="button" class="tag-btn" data-value="Variedad">🎯 Variedad</button>
+                    </div>
+                    <textarea name="q2" class="text-input" placeholder="O escribe tu propia respuesta..." rows="2"></textarea>
+                </div>
+
+                <!-- Question 3 -->
+                <div class="question-card" data-question="3">
+                    <div class="question-number">03</div>
+                    <h3 class="question-text">¿Cómo describirías la experiencia que has tenido comprando en la tienda?</h3>
+                    <div class="emoji-rating">
+                        <label class="emoji-option">
+                            <input type="radio" name="q3" value="excelente" required>
+                            <span class="emoji-content">
+                                <span class="emoji">😍</span>
+                                <span class="emoji-label">Excelente</span>
+                            </span>
+                        </label>
+                        <label class="emoji-option">
+                            <input type="radio" name="q3" value="buena">
+                            <span class="emoji-content">
+                                <span class="emoji">😊</span>
+                                <span class="emoji-label">Buena</span>
+                            </span>
+                        </label>
+                        <label class="emoji-option">
+                            <input type="radio" name="q3" value="regular">
+                            <span class="emoji-content">
+                                <span class="emoji">😐</span>
+                                <span class="emoji-label">Regular</span>
+                            </span>
+                        </label>
+                        <label class="emoji-option">
+                            <input type="radio" name="q3" value="mejorable">
+                            <span class="emoji-content">
+                                <span class="emoji">😕</span>
+                                <span class="emoji-label">Mejorable</span>
+                            </span>
+                        </label>
+                        <label class="emoji-option">
+                            <input type="radio" name="q3" value="mala">
+                            <span class="emoji-content">
+                                <span class="emoji">😞</span>
+                                <span class="emoji-label">Mala</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Question 4 -->
+                <div class="question-card" data-question="4">
+                    <div class="question-number">04</div>
+                    <h3 class="question-text">¿Qué es lo que más te gusta de Nanotronics?</h3>
+                    <div class="checkbox-grid">
+                        <label class="checkbox-card">
+                            <input type="checkbox" name="q4" value="productos">
+                            <span class="checkbox-content">
+                                <span class="checkbox-icon">📦</span>
+                                <span class="checkbox-label">Productos</span>
+                            </span>
+                        </label>
+                        <label class="checkbox-card">
+                            <input type="checkbox" name="q4" value="precios">
+                            <span class="checkbox-content">
+                                <span class="checkbox-icon">💵</span>
+                                <span class="checkbox-label">Precios</span>
+                            </span>
+                        </label>
+                        <label class="checkbox-card">
+                            <input type="checkbox" name="q4" value="atencion">
+                            <span class="checkbox-content">
+                                <span class="checkbox-icon">👥</span>
+                                <span class="checkbox-label">Atención</span>
+                            </span>
+                        </label>
+                        <label class="checkbox-card">
+                            <input type="checkbox" name="q4" value="ubicacion">
+                            <span class="checkbox-content">
+                                <span class="checkbox-icon">📍</span>
+                                <span class="checkbox-label">Ubicación</span>
+                            </span>
+                        </label>
+                        <label class="checkbox-card">
+                            <input type="checkbox" name="q4" value="garantia">
+                            <span class="checkbox-content">
+                                <span class="checkbox-icon">🛡️</span>
+                                <span class="checkbox-label">Garantía</span>
+                            </span>
+                        </label>
+                        <label class="checkbox-card">
+                            <input type="checkbox" name="q4" value="servicio_tecnico">
+                            <span class="checkbox-content">
+                                <span class="checkbox-icon">🔧</span>
+                                <span class="checkbox-label">Servicio técnico</span>
+                            </span>
+                        </label>
+                    </div>
+                    <textarea name="q4_why" class="text-input small" placeholder="¿Por qué? (opcional)" rows="2"></textarea>
+                </div>
+
+                <!-- Question 5 -->
+                <div class="question-card" data-question="5">
+                    <div class="question-number">05</div>
+                    <h3 class="question-text">¿Qué crees que podríamos mejorar en la tienda?</h3>
+                    <div class="checkbox-grid">
+                        <label class="checkbox-card">
+                            <input type="checkbox" name="q5" value="mas_productos">
+                            <span class="checkbox-content">
+                                <span class="checkbox-icon">📦</span>
+                                <span class="checkbox-label">Más productos</span>
+                            </span>
+                        </label>
+                        <label class="checkbox-card">
+                            <input type="checkbox" name="q5" value="mejores_precios">
+                            <span class="checkbox-content">
+                                <span class="checkbox-icon">💰</span>
+                                <span class="checkbox-label">Mejores precios</span>
+                            </span>
+                        </label>
+                        <label class="checkbox-card">
+                            <input type="checkbox" name="q5" value="tiempos_entrega">
+                            <span class="checkbox-content">
+                                <span class="checkbox-icon">⏱️</span>
+                                <span class="checkbox-label">Tiempos de entrega</span>
+                            </span>
+                        </label>
+                        <label class="checkbox-card">
+                            <input type="checkbox" name="q5" value="espacio_tienda">
+                            <span class="checkbox-content">
+                                <span class="checkbox-icon">🏪</span>
+                                <span class="checkbox-label">Espacio de tienda</span>
+                            </span>
+                        </label>
+                        <label class="checkbox-card">
+                            <input type="checkbox" name="q5" value="horarios">
+                            <span class="checkbox-content">
+                                <span class="checkbox-icon">🕐</span>
+                                <span class="checkbox-label">Horarios</span>
+                            </span>
+                        </label>
+                        <label class="checkbox-card">
+                            <input type="checkbox" name="q5" value="servicio_cliente">
+                            <span class="checkbox-content">
+                                <span class="checkbox-icon">👥</span>
+                                <span class="checkbox-label">Servicio al cliente</span>
+                            </span>
+                        </label>
+                        <label class="checkbox-card">
+                            <input type="checkbox" name="q5" value="servicio_tecnico">
+                            <span class="checkbox-content">
+                                <span class="checkbox-icon">🔧</span>
+                                <span class="checkbox-label">Servicio técnico</span>
+                            </span>
+                        </label>
+                        <label class="checkbox-card">
+                            <input type="checkbox" name="q5" value="nada">
+                            <span class="checkbox-content">
+                                <span class="checkbox-icon">✅</span>
+                                <span class="checkbox-label">Todo está bien</span>
+                            </span>
+                        </label>
+                    </div>
+                    <textarea name="q5_comment" class="text-input small" placeholder="Otros comentarios (opcional)" rows="2"></textarea>
+                </div>
+
+                <!-- Question 6 -->
+                <div class="question-card" data-question="6">
+                    <div class="question-number">06</div>
+                    <h3 class="question-text">¿Cómo describirías la atención y asesoría que recibes del personal?</h3>
+                    <div class="star-rating" data-name="q6">
+                        <input type="hidden" name="q6" id="q6-value">
+                        <button type="button" class="star" data-value="1">★</button>
+                        <button type="button" class="star" data-value="2">★</button>
+                        <button type="button" class="star" data-value="3">★</button>
+                        <button type="button" class="star" data-value="4">★</button>
+                        <button type="button" class="star" data-value="5">★</button>
+                    </div>
+                    <div class="rating-labels">
+                        <span>Necesita mejorar</span>
+                        <span>Excelente</span>
+                    </div>
+                </div>
+
+                <!-- Question 7 -->
+                <div class="question-card" data-question="7">
+                    <div class="question-number">07</div>
+                    <h3 class="question-text">¿Qué tan actualizados consideras los productos que vendemos?</h3>
+                    <div class="slider-container">
+                        <input type="range" name="q7_slider" class="slider" min="1" max="5" value="3" id="q7-slider">
+                        <div class="slider-labels">
+                            <span>Desactualizados</span>
+                            <span>Algo</span>
+                            <span>Neutral</span>
+                            <span>Actualizados</span>
+                            <span>Muy actualizados</span>
+                        </div>
+                    </div>
+                    <textarea name="q7" class="text-input small" placeholder="¿Por qué? (opcional)" rows="2"></textarea>
+                </div>
+
+                <!-- Question 8 -->
+                <div class="question-card" data-question="8">
+                    <div class="question-number">08</div>
+                    <h3 class="question-text">¿Qué productos te gustaría que Nanotronics ofreciera?</h3>
+                    <div class="quick-tags multi-select">
+                        <button type="button" class="tag-btn" data-value="Laptops gaming">🎮 Laptops gaming</button>
+                        <button type="button" class="tag-btn" data-value="Celulares">📱 Celulares</button>
+                        <button type="button" class="tag-btn" data-value="Smart home">🏠 Smart home</button>
+                        <button type="button" class="tag-btn" data-value="Audio premium">🎧 Audio premium</button>
+                        <button type="button" class="tag-btn" data-value="Componentes PC">🖥️ Componentes PC</button>
+                        <button type="button" class="tag-btn" data-value="Cámaras de seguridad">📹 Cámaras de seguridad</button>
+                        <button type="button" class="tag-btn" data-value="Paneles solares">☀️ Paneles solares</button>
+                        <button type="button" class="tag-btn" data-value="Consolas">🕹️ Consolas</button>
+                        <button type="button" class="tag-btn" data-value="Cámaras">📷 Cámaras</button>
+                    </div>
+                    <textarea name="q8" class="text-input" placeholder="O escribe otros productos que te gustaría encontrar..." rows="2"></textarea>
+                </div>
+
+                <!-- Question 9 -->
+                <div class="question-card" data-question="9">
+                    <div class="question-number">09</div>
+                    <h3 class="question-text">¿Qué palabra o frase usarías para describir la personalidad de la marca?</h3>
+                    <div class="word-cloud">
+                        <button type="button" class="word-btn" data-value="Innovadora">Innovadora</button>
+                        <button type="button" class="word-btn" data-value="Confiable">Confiable</button>
+                        <button type="button" class="word-btn" data-value="Moderna">Moderna</button>
+                        <button type="button" class="word-btn" data-value="Profesional">Profesional</button>
+                        <button type="button" class="word-btn" data-value="Cercana">Cercana</button>
+                        <button type="button" class="word-btn" data-value="Premium">Premium</button>
+                        <button type="button" class="word-btn" data-value="Accesible">Accesible</button>
+                        <button type="button" class="word-btn" data-value="Experta">Experta</button>
+                        <button type="button" class="word-btn" data-value="Joven">Joven</button>
+                    </div>
+                    <textarea name="q9" class="text-input small" placeholder="O escribe tu propia palabra..." rows="1"></textarea>
+                </div>
+
+                <!-- Question 10 -->
+                <div class="question-card" data-question="10">
+                    <div class="question-number">10</div>
+                    <h3 class="question-text">¿Qué tan confiable consideras la tienda?</h3>
+                    <div class="trust-meter">
+                        <div class="trust-options">
+                            <label class="trust-option">
+                                <input type="radio" name="q10_trust" value="1">
+                                <span class="trust-bar" style="--level: 20%"></span>
+                                <span class="trust-label">Poco</span>
+                            </label>
+                            <label class="trust-option">
+                                <input type="radio" name="q10_trust" value="2">
+                                <span class="trust-bar" style="--level: 40%"></span>
+                                <span class="trust-label">Algo</span>
+                            </label>
+                            <label class="trust-option">
+                                <input type="radio" name="q10_trust" value="3">
+                                <span class="trust-bar" style="--level: 60%"></span>
+                                <span class="trust-label">Bastante</span>
+                            </label>
+                            <label class="trust-option">
+                                <input type="radio" name="q10_trust" value="4">
+                                <span class="trust-bar" style="--level: 80%"></span>
+                                <span class="trust-label">Muy</span>
+                            </label>
+                            <label class="trust-option">
+                                <input type="radio" name="q10_trust" value="5">
+                                <span class="trust-bar" style="--level: 100%"></span>
+                                <span class="trust-label">Total</span>
+                            </label>
+                        </div>
+                    </div>
+                    <textarea name="q10" class="text-input small" placeholder="¿Qué experiencias te llevan a pensarlo? (opcional)" rows="2"></textarea>
+                </div>
+
+                <!-- Question 11 -->
+                <div class="question-card" data-question="11">
+                    <div class="question-number">11</div>
+                    <h3 class="question-text">¿Qué te gustaría que la marca transmitiera o comunicara más?</h3>
+                    <div class="checkbox-grid">
+                        <label class="checkbox-card">
+                            <input type="checkbox" name="q11" value="promociones">
+                            <span class="checkbox-content">
+                                <span class="checkbox-icon">🏷️</span>
+                                <span class="checkbox-label">Promociones</span>
+                            </span>
+                        </label>
+                        <label class="checkbox-card">
+                            <input type="checkbox" name="q11" value="novedades">
+                            <span class="checkbox-content">
+                                <span class="checkbox-icon">🆕</span>
+                                <span class="checkbox-label">Novedades</span>
+                            </span>
+                        </label>
+                        <label class="checkbox-card">
+                            <input type="checkbox" name="q11" value="tutoriales">
+                            <span class="checkbox-content">
+                                <span class="checkbox-icon">📚</span>
+                                <span class="checkbox-label">Tutoriales</span>
+                            </span>
+                        </label>
+                        <label class="checkbox-card">
+                            <input type="checkbox" name="q11" value="consejos">
+                            <span class="checkbox-content">
+                                <span class="checkbox-icon">💡</span>
+                                <span class="checkbox-label">Consejos tech</span>
+                            </span>
+                        </label>
+                        <label class="checkbox-card">
+                            <input type="checkbox" name="q11" value="eventos">
+                            <span class="checkbox-content">
+                                <span class="checkbox-icon">🎉</span>
+                                <span class="checkbox-label">Eventos</span>
+                            </span>
+                        </label>
+                        <label class="checkbox-card">
+                            <input type="checkbox" name="q11" value="detras_camaras">
+                            <span class="checkbox-content">
+                                <span class="checkbox-icon">🎬</span>
+                                <span class="checkbox-label">Detrás de cámaras</span>
+                            </span>
+                        </label>
+                    </div>
+                    <textarea name="q11_other" class="text-input small" placeholder="¿Algo más que te gustaría ver? (opcional)" rows="2"></textarea>
+                </div>
+            </form>
+
+            <div class="navigation-buttons">
+                <button class="btn-secondary" id="prev-btn" onclick="prevQuestion()" disabled>
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Anterior</span>
+                </button>
+                <button class="btn-primary" id="next-btn" onclick="nextQuestion()">
+                    <span>Siguiente</span>
+                    <svg class="btn-arrow" viewBox="0 0 24 24" fill="none">
+                        <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <button class="btn-submit" id="submit-btn" onclick="submitSurvey()" style="display: none;">
+                    <span>Enviar respuestas</span>
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+        </section>
+
+        <!-- Thank You Screen -->
+        <section id="thankyou-screen" class="screen">
+            <div class="thankyou-content">
+                <div class="success-animation">
+                    <svg class="checkmark" viewBox="0 0 120 120">
+                        <circle class="checkmark-circle" cx="60" cy="60" r="54" fill="none" stroke="url(#successGrad)" stroke-width="6"/>
+                        <path class="checkmark-check" d="M30 60L50 80L90 40" fill="none" stroke="url(#successGrad)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                        <defs>
+                            <linearGradient id="successGrad" x1="0" y1="0" x2="120" y2="120">
+                                <stop offset="0%" stop-color="#00D9FF"/>
+                                <stop offset="50%" stop-color="#7B2FFF"/>
+                                <stop offset="100%" stop-color="#FF2D7C"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <h2 class="thankyou-title">¡Gracias por tu tiempo!</h2>
+                <p class="thankyou-message">Tu opinión es muy valiosa para nosotros. Usaremos tus respuestas para seguir mejorando.</p>
+                <div class="social-section">
+                    <p class="social-text">Síguenos en redes sociales</p>
+                    <div class="social-links">
+                        <a href="#" class="social-link" aria-label="Instagram">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                            </svg>
+                        </a>
+                        <a href="#" class="social-link" aria-label="Facebook">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                            </svg>
+                        </a>
+                        <a href="#" class="social-link" aria-label="WhatsApp">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
