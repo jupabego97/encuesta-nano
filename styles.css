@@ -170,8 +170,8 @@ body {
 }
 
 .logo-icon {
-    width: 140px;
-    height: 50px;
+    width: 220px;
+    height: 70px;
     margin: 0 auto 24px;
     animation: pulse 3s ease-in-out infinite;
 }
@@ -179,6 +179,7 @@ body {
 .logo-icon svg {
     width: 100%;
     height: 100%;
+    filter: drop-shadow(0 4px 12px rgba(45, 189, 182, 0.3));
 }
 
 @keyframes pulse {
