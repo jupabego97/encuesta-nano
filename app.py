@@ -1,130 +1,179 @@
 """
 NANOTRONICS SURVEY - Backend Flask
-Simple backend to save survey responses to a PostgreSQL database.
+Simple backend to save survey responses
 """
 
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import func
 from datetime import datetime
+import json
 import os
-import click
 
-app = Flask(__name__, static_folder='static', template_folder='templates')
+app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
 
-# Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
-    'DATABASE_URL', 'postgresql://user:password@localhost/survey_db'
-)
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# Directory to store responses
+RESPONSES_DIR = 'responses'
 
-db = SQLAlchemy(app)
+# Ensure responses directory exists
+if not os.path.exists(RESPONSES_DIR):
+    os.makedirs(RESPONSES_DIR)
 
-# --- Database Model ---
-class SurveyResponse(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    submission_timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    data = db.Column(db.JSON)
 
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'submission_timestamp': self.submission_timestamp.isoformat(),
-            'data': self.data
-        }
-
-# --- Command to initialize the database ---
-@app.cli.command("init-db")
-def init_db_command():
-    """Creates the database tables."""
-    db.create_all()
-    click.echo("Initialized the database.")
-
-# --- Routes ---
 @app.route('/')
 def index():
     """Serve the main survey page"""
-    return render_template('index.html')
+    return send_from_directory('.', 'index.html')
+
+
+@app.route('/<path:path>')
+def serve_static(path):
+    """Serve static files (CSS, JS)"""
+    return send_from_directory('.', path)
+
 
 @app.route('/api/submit', methods=['POST'])
 def submit_survey():
-    """Handle survey submission and save to database"""
+    """Handle survey submission"""
     try:
         data = request.get_json()
+        
         if not data:
             return jsonify({'error': 'No data received'}), 400
-
-        # Add server timestamp to the data blob
-        data['server_timestamp'] = datetime.utcnow().isoformat()
         
-        # Create a new response record
-        new_response = SurveyResponse(data=data)
+        # Add server timestamp
+        data['server_timestamp'] = datetime.now().isoformat()
         
-        # Add to session and commit
-        db.session.add(new_response)
-        db.session.commit()
+        # Generate unique filename
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+        filename = f'response_{timestamp}.json'
+        filepath = os.path.join(RESPONSES_DIR, filename)
+        
+        # Save to file
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        
+        # Also append to a master CSV for easy viewing
+        append_to_csv(data)
         
         return jsonify({
             'success': True,
             'message': '¡Respuesta guardada correctamente!',
-            'id': new_response.id
-        }), 201
+            'id': timestamp
+        }), 200
         
     except Exception as e:
-        db.session.rollback()
         print(f'Error saving response: {e}')
         return jsonify({'error': str(e)}), 500
 
+
+def append_to_csv(data):
+    """Append response to master CSV file"""
+    import csv
+    
+    csv_file = os.path.join(RESPONSES_DIR, 'all_responses.csv')
+    file_exists = os.path.exists(csv_file)
+    
+    # Flatten nested data
+    flat_data = {}
+    for key, value in data.items():
+        if isinstance(value, list):
+            flat_data[key] = ', '.join(str(v) for v in value)
+        else:
+            flat_data[key] = str(value)
+    
+    with open(csv_file, 'a', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=flat_data.keys())
+        
+        if not file_exists:
+            writer.writeheader()
+        
+        writer.writerow(flat_data)
+
+
 @app.route('/api/responses', methods=['GET'])
 def get_responses():
-    """Get all responses from the database"""
+    """Get all responses (for admin view)"""
     try:
-        responses = SurveyResponse.query.order_by(SurveyResponse.submission_timestamp.desc()).all()
-        response_list = [r.to_dict() for r in responses]
+        responses = []
+        
+        for filename in os.listdir(RESPONSES_DIR):
+            if filename.endswith('.json'):
+                filepath = os.path.join(RESPONSES_DIR, filename)
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    responses.append(json.load(f))
+        
+        # Sort by timestamp (newest first)
+        responses.sort(key=lambda x: x.get('server_timestamp', ''), reverse=True)
         
         return jsonify({
-            'total': len(response_list),
-            'responses': response_list
+            'total': len(responses),
+            'responses': responses
         }), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
-    """Get basic survey statistics from the database"""
+    """Get basic survey statistics"""
     try:
-        total_responses = db.session.query(func.count(SurveyResponse.id)).scalar()
-
-        if total_responses == 0:
-            return jsonify({'total_responses': 0, 'message': 'No hay respuestas aún'}), 200
-
-        # Helper to extract and count JSON property
-        def get_json_property_distribution(prop):
-            results = db.session.query(SurveyResponse.data[prop].astext, func.count(SurveyResponse.id)).group_by(SurveyResponse.data[prop].astext).all()
-            return {key: value for key, value in results if key}
-
-        # Helper to calculate average of a JSON property
-        def get_json_property_average(prop):
-            avg = db.session.query(func.avg(func.cast(SurveyResponse.data[prop], db.Float))).scalar()
-            return round(avg, 2) if avg is not None else None
-
+        responses = []
+        
+        for filename in os.listdir(RESPONSES_DIR):
+            if filename.endswith('.json'):
+                filepath = os.path.join(RESPONSES_DIR, filename)
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    responses.append(json.load(f))
+        
+        if not responses:
+            return jsonify({
+                'total_responses': 0,
+                'message': 'No hay respuestas aún'
+            }), 200
+        
+        # Calculate basic stats
         stats = {
-            'total_responses': total_responses,
-            'q1_distribution': get_json_property_distribution('q1'),
-            'q3_distribution': get_json_property_distribution('q3'),
-            'q6_average': get_json_property_average('q6'),
-            'q7_average': get_json_property_average('q7_slider'),
-            'q10_average': get_json_property_average('q10_trust'),
+            'total_responses': len(responses),
+            'q1_distribution': count_values(responses, 'q1'),
+            'q3_distribution': count_values(responses, 'q3'),
+            'q6_average': calculate_average(responses, 'q6'),
+            'q7_average': calculate_average(responses, 'q7_slider'),
+            'q10_average': calculate_average(responses, 'q10_trust'),
         }
         
         return jsonify(stats), 200
         
     except Exception as e:
-        print(f"Error calculating stats: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+def count_values(responses, key):
+    """Count occurrences of each value for a key"""
+    counts = {}
+    for response in responses:
+        value = response.get(key)
+        if value:
+            counts[value] = counts.get(value, 0) + 1
+    return counts
+
+
+def calculate_average(responses, key):
+    """Calculate average for numeric values"""
+    values = []
+    for response in responses:
+        value = response.get(key)
+        if value:
+            try:
+                values.append(float(value))
+            except (ValueError, TypeError):
+                pass
+    
+    if values:
+        return round(sum(values) / len(values), 2)
+    return None
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
@@ -133,3 +182,4 @@ if __name__ == '__main__':
     print(f'📊 Abre http://localhost:{port} en tu navegador')
     print('-' * 40)
     app.run(debug=debug, host='0.0.0.0', port=port)
+
